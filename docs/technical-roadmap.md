@@ -19,13 +19,11 @@ This document outlines the technical plan and phased roadmap for the Micronutrie
 - Initial infrastructure (dev/staging/prod environments)
 - Team onboarding
 
-### Phase 1: Core Receipt Ingestion & OCR
-- Implement image/PDF upload and camera capture
-- Integrate Tesseract.js (offline OCR)
-- Fallback to cloud OCR (with user consent)
-- PII redaction pipeline
-- Receipt parse confidence scoring & review UI
-- Unit and integration tests for ingestion pipeline
+### Phase 1: Core Food Image Processing
+- Implement image upload and camera capture
+- Integrate LLM-based food recognition pipeline
+- Implement confidence scoring & review UI
+- Unit and integration tests for image processing pipeline
 
 ### Phase 2: Nutrition Mapping & Data Model
 - UPC and fuzzy string matching to USDA FDC
@@ -75,9 +73,8 @@ This document outlines the technical plan and phased roadmap for the Micronutrie
 ---
 
 ## 4. Technical Dependencies
-- Tesseract.js (OCR)
+- OpenAI/LLM provider (for food recognition)
 - USDA FoodData Central API
-- OpenAI/LLM provider
 - Firebase Cloud Messaging (push)
 - SendGrid (email)
 - Cloud provider (for scaling, storage, backups)
@@ -87,9 +84,9 @@ This document outlines the technical plan and phased roadmap for the Micronutrie
 ## 5. Risk Management
 | Risk | Mitigation |
 |------|------------|
-| OCR accuracy on poor-quality receipts | Multi-tier fallback, user review UI, model retraining |
-| API rate limits (USDA, LLM) | Caching, batching, monitoring, fallback logic |
-| Data privacy & PII exposure | Client-side OCR by default, PII redaction, encryption |
+| LLM accuracy on food recognition | Multi-tier confidence scoring, user review UI, model fine-tuning |
+| API rate limits (LLM, USDA) | Caching, batching, monitoring, fallback logic |
+| Data privacy & PII exposure | Client-side image processing by default, encryption |
 | Scaling bottlenecks | Auto-scaling, queue monitoring, load testing |
 | Accessibility gaps | Early audits, manual and automated testing |
 | Delayed external dependencies | Mocking, feature flags, parallel development |

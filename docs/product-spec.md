@@ -45,31 +45,28 @@ Audience: Engineering, Design, Data, QA, DevOps
 
 ## 4 · Functional Requirements
 
-### 4.1 Receipt Ingestion
-- Accept JPEG/PNG upload, live camera capture, or PDF import.  
-- Max file size: 10 MB; multiple receipts per week accumulate.
+### 4.1 Food Image Ingestion
+- Accept JPEG/PNG upload or live camera capture
+- Max file size: 10 MB; multiple images per meal allowed
+- Support for both individual food items and complete meals
 
-### 4.2 OCR Parsing Pipeline
-- Extract **line items** (description, quantity, price, weight if printed).  
-- Mask PII lines containing card number, store loyalty ID, or address *before persisting*.  
+### 4.2 LLM-based Food Recognition Pipeline
+- Extract food items and portions from images
+- Process both individual food items and complete meals
 - Confidence thresholds:
   - High (≥ 80%): Auto-process
   - Medium (60-79%): "Yellow" review flag; user can edit
   - Low (< 60%): "Red" review flag; requires user input
-- Fallback strategy:
-  1. Local Tesseract.js v4.1.1 (offline-first)
-  2. Cloud OCR service (with user consent)
-  3. Manual entry option
 - Error handling:
-  - Retry failed OCR attempts (max 3)
+  - Retry failed recognition attempts (max 3)
   - Log confidence scores for model improvement
-  - Track failure patterns by receipt format
+  - Track failure patterns by food type/image quality
 
-### 4.3 SKU → Nutrition Mapping
+### 4.3 Food → Nutrition Mapping
 - Attempt match in order:  
-  1. Exact UPC lookup  
+  1. Exact food item match via LLM
   2. String fuzzy match (≥ 0.8 similarity)  
-  3. Prompt LLM: *"Return best match USDA FoodData Central item id for: 'ORGANIC GALA APPLES-2.34 LB'."*  
+  3. Prompt LLM: *"Return best match USDA FoodData Central item id for: '[FOOD ITEM]'."*  
 - Output: nutrient vector covering at least these 10 micros: Iron, Potassium, Magnesium, Calcium, Vitamin D, Vitamin B-12, Folate, Zinc, Selenium, Fiber.
 
 ### 4.4 Aggregation & Radar Chart
@@ -113,8 +110,7 @@ Audience: Engineering, Design, Data, QA, DevOps
 | Service | Purpose | Contract Notes |
 |---------|---------|----------------|
 | **USDA FoodData Central API** | Nutrient vectors | Cache for 24 h; respect rate limits (3 K/day per key). |
-| **Image OCR (client-side)** | Text extraction | Tesseract.js v5 packaged in service worker. |
-| **OpenAI / LLM provider** | Fuzzy mapping & suggestion generation | Response time budget 1 s; must support function-call JSON mode. |
+| **OpenAI / LLM provider** | Food recognition & mapping | Response time budget 1 s; must support function-call JSON mode. |
 | **Push Gateway** | Notifications | Use Firebase Cloud Messaging unless alternative chosen. |
 | **E-mail** | Weekly summary | SendGrid free tier (100 emails/day) initial. |
 
@@ -126,27 +122,26 @@ User
   ├─ id (uuid)
   ├─ version (int)  # Schema version for migrations
   ├─ demographics {age_range, sex, diet_style}
-  ├─ settings {ocr_offline: bool, units: metric|imperial}
+  ├─ settings {units: metric|imperial}
   ├─ created_at (timestamp)
   ├─ updated_at (timestamp)
   ├─ last_login (timestamp)
   └─ indexes: [id, email]
 
-Receipt
+FoodImage
   ├─ id (uuid)
   ├─ user_id (uuid, indexed)
   ├─ datetime (timestamp, indexed)
-  ├─ raw_text (encrypted)
-  ├─ status {parsed|needs_review|failed}
-  ├─ ocr_confidence (float)
-  ├─ ocr_provider {local|cloud}
+  ├─ image_url (encrypted)
+  ├─ status {processed|needs_review|failed}
+  ├─ recognition_confidence (float)
   ├─ created_at (timestamp)
   ├─ updated_at (timestamp)
   └─ indexes: [user_id, datetime]
 
-LineItem
+FoodItem
   ├─ id (uuid)
-  ├─ receipt_id (uuid, indexed)
+  ├─ food_image_id (uuid, indexed)
   ├─ description (text)
   ├─ quantity (float)
   ├─ fdc_id (nullable, indexed)
@@ -154,7 +149,7 @@ LineItem
   ├─ is_estimated (boolean)
   ├─ created_at (timestamp)
   ├─ updated_at (timestamp)
-  └─ indexes: [receipt_id, fdc_id]
+  └─ indexes: [food_image_id, fdc_id]
 
 NutrientLedger (materialised weekly view)
   ├─ user_id (uuid, indexed)
@@ -162,7 +157,7 @@ NutrientLedger (materialised weekly view)
   ├─ nutrient {iron: mg, potassium: mg, ...}
   ├─ percent_rda {iron: %, ...}
   ├─ last_updated (timestamp)
-  ├─ data_source {receipt|manual|estimated}
+  ├─ data_source {image|manual|estimated}
   └─ indexes: [user_id, week_start]
 ```
 
@@ -223,9 +218,9 @@ NutrientLedger (materialised weekly view)
 | **Internal Documentation** | - Architecture diagrams<br>- System dependencies<br>- Deployment procedures<br>- Incident response playbooks |
 
 ## 14 · Open Questions
-1. Do we support multiple receipts per day with partial overlaps?  
+1. Do we support multiple food images per day with partial overlaps?  
    *Answer: Yes, system will deduplicate items and merge nutrients within 24h window*
-2. How do we handle restaurant receipts (nutrients unknown)?  
+2. How do we handle restaurant meals (nutrients unknown)?  
    *Answer: Flag as "estimated" and use generic restaurant item database*
 3. Which 5 v1 micronutrients are *most actionable*?  
    *Answer: Iron, Vitamin D, B12, Magnesium, and Potassium (based on common deficiencies)*
@@ -233,8 +228,8 @@ NutrientLedger (materialised weekly view)
    *Answer: Server-side for consistency and reduced client load*
 5. Monetisation: affiliate links in v1 or wait for ≥10 k MAU?
    *Answer: Wait for 10k MAU to maintain user trust*
-6. What is the backup strategy for OCR service?  
-   *Answer: Fallback to cloud OCR if local OCR fails, with user consent*
+6. What is the backup strategy for LLM service?  
+   *Answer: Fallback to alternative LLM provider if primary fails, with user consent*
 7. How do we handle seasonal produce variations?  
    *Answer: Use USDA seasonal data to adjust nutrient values*
 
