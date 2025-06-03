@@ -15,7 +15,7 @@ class OCRProvider(str, enum.Enum):
 
 class Receipt(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("user.id"), nullable=False, index=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
     datetime = Column(DateTime, nullable=False, index=True)
     raw_text = Column(String, nullable=False)  # Encrypted in production
     status = Column(Enum(ReceiptStatus), nullable=False)
