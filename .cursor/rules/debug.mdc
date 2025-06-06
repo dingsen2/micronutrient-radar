@@ -1,0 +1,10 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Debugging Best Practices
+
+- Always enable detailed error messages in FastAPI (set `debug=True`) during testing to quickly identify response structure issues and other errors.
+- Question initial assumptions and start with the basics before diving into complex mocking or configuration changes.
+- Iterate quickly through potential solutions, starting with the simplest and most direct ones to save time and avoid unnecessary complexity.
