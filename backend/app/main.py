@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.api.v1 import user, receipt, food_image
+from app.api.endpoints import nutrients
 from fastapi.openapi.utils import get_openapi
 from app.db.init_db import init_db
 
@@ -24,6 +25,7 @@ app.add_middleware(
 app.include_router(user.router, prefix=f"{settings.API_V1_STR}/users", tags=["users"])
 app.include_router(receipt.router, prefix=f"{settings.API_V1_STR}/receipts", tags=["receipts"])
 app.include_router(food_image.router, prefix=f"{settings.API_V1_STR}/food-images", tags=["food-images"])
+app.include_router(nutrients.router, prefix=f"{settings.API_V1_STR}/nutrients", tags=["nutrients"])
 
 @app.get("/")
 async def root():

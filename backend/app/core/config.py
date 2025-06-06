@@ -32,6 +32,7 @@ class Settings(BaseSettings):
 
     # OpenAI Configuration
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
+    OPENAI_API_BASE: str = os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1")
 
     # Upload Configuration
     UPLOAD_DIR: str = os.getenv("UPLOAD_DIR", "uploads")
