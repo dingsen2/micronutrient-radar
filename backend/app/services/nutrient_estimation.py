@@ -3,6 +3,9 @@ import json
 from datetime import datetime
 import logging
 from pydantic import BaseModel
+import redis
+from backend.app.core.deps import get_openai_client
+from backend.app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -27,9 +30,9 @@ class FoodItem(BaseModel):
 class NutrientEstimationService:
     """Service for estimating nutrient content of food items using LLM."""
     
-    def __init__(self, openai_client):
+    def __init__(self, openai_client, redis_url: str = "redis://localhost:6379/0"):
         self.openai_client = openai_client
-        self.nutrient_cache = {}  # In-memory cache, replace with DB in production
+        self.redis_client = redis.Redis.from_url(redis_url)
         self.required_nutrients = [
             "iron_mg", "potassium_mg", "magnesium_mg", "calcium_mg",
             "vitamin_d_mcg", "vitamin_b12_mcg", "folate_mcg",
@@ -67,12 +70,22 @@ class NutrientEstimationService:
         return results
 
     def _get_from_cache(self, food_name: str) -> Optional[NutrientProfile]:
-        """Get nutrient profile from cache."""
-        return self.nutrient_cache.get(food_name.lower())
+        """Get nutrient profile from Redis cache."""
+        try:
+            cached_data = self.redis_client.get(food_name.lower())
+            if cached_data:
+                data = json.loads(cached_data)
+                return NutrientProfile(**data)
+        except Exception as e:
+            logger.error(f"Error retrieving from cache: {str(e)}")
+        return None
 
     def _add_to_cache(self, food_name: str, profile: NutrientProfile):
-        """Add nutrient profile to cache."""
-        self.nutrient_cache[food_name.lower()] = profile
+        """Add nutrient profile to Redis cache."""
+        try:
+            self.redis_client.set(food_name.lower(), profile.model_dump_json())
+        except Exception as e:
+            logger.error(f"Error adding to cache: {str(e)}")
 
     async def _get_llm_estimation(self, food_item: FoodItem) -> NutrientProfile:
         """

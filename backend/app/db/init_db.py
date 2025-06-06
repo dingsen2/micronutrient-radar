@@ -1,9 +1,9 @@
 from sqlalchemy.orm import Session
-from app.db.session import engine
-from app.models.base import Base
-from app.models.user import User
-from app.models.receipt import Receipt, LineItem
-from app.models.nutrient_ledger import NutrientLedger
+from backend.app.db.base_class import Base
+from backend.app.db.session import engine
+from backend.app.models.receipt import Receipt, LineItem
+from backend.app.models.models import User, NutrientLedger
+from backend.app.core.config import settings
 
 def init_db() -> None:
     # Create all tables

@@ -1,13 +1,13 @@
 from sqlalchemy.orm import Session
-from app.models.models import User
+from backend.app.models.models import User
 from passlib.context import CryptContext
 from jose import jwt
 from datetime import datetime, timedelta
-from app.core.config import settings
+from backend.app.core.config import settings
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError
-from app.db.session import get_db
+from backend.app.db.session import get_db
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 

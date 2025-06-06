@@ -11,9 +11,9 @@ from sqlalchemy.orm import Session
 import shutil
 from uuid import UUID
 
-from app.core.config import settings
-from app.models.models import FoodImage, FoodItem
-from app.schemas.food_image import FoodImageCreate, FoodImageResponse
+from backend.app.core.config import settings
+from backend.app.models.models import FoodImage, FoodItem, NutrientLedger
+from backend.app.schemas.food_image import FoodImageCreate, FoodImageResponse
 
 # Configure OpenAI
 client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)

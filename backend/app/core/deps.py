@@ -1,6 +1,6 @@
 from typing import Generator
 import openai
-from app.core.config import settings
+from backend.app.core.config import settings
 
 def get_openai_client() -> Generator:
     """
