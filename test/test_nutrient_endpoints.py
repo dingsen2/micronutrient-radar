@@ -39,7 +39,7 @@ def sample_food_items():
 
 def test_estimate_nutrients_endpoint(client, sample_food_items):
     with patch('app.api.endpoints.nutrients.estimate_nutrients_task.delay') as mock_delay:
-    mock_task = MagicMock()
+        mock_task = MagicMock()
         mock_task.id = 'test-task-id'
         mock_delay.return_value = mock_task
         response = client.post(

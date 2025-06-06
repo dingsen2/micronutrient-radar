@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
 from sqlalchemy.orm import Session
-from backend.app.db.session import get_db
-from backend.app.models.receipt import Receipt, ReceiptStatus, OCRProvider
-from backend.app.services.user_service import get_current_user
-from backend.app.models.user import User
-from backend.app.core.config import settings
+from app.db.session import get_db
+from app.models.receipt import Receipt, ReceiptStatus, OCRProvider
+from app.services.user_service import get_current_user
+from app.models.user import User
+from app.core.config import settings
 from datetime import datetime
 import uuid
 import os

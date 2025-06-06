@@ -2,9 +2,10 @@ from typing import List
 from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
 from sqlalchemy.orm import Session
 
-from backend.app.api.deps import get_current_user, get_db
-from backend.app.models.models import User
-from backend.app.schemas.food_image import FoodImageResponse
+from app.api.deps import get_current_user, get_db
+from app.models.models import User
+from app.schemas.food_image import FoodImageResponse
+from app.services.food_image_service import FoodImageService
 
 router = APIRouter()
 

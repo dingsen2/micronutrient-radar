@@ -1,17 +1,16 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from backend.app.core.config import settings
-from backend.app.api.v1 import user, receipt, food_image
-from backend.app.api.endpoints import nutrients
+from app.core.config import settings
+from app.api.v1 import user, receipt, food_image
+from app.api.endpoints import nutrients
 from fastapi.openapi.utils import get_openapi
-from backend.app.db.init_db import init_db
+from app.db.init_db import init_db
 
 app = FastAPI(
     title="Micronutrient Radar API",
     description="Backend API for Micronutrient Radar - A smart nutrition tracking app",
     version="1.0.0",
-    openapi_url=f"{settings.API_V1_STR}/openapi.json",
-    debug=True
+    openapi_url=f"{settings.API_V1_STR}/openapi.json"
 )
 
 # Configure CORS
