@@ -26,12 +26,29 @@ This document outlines the technical plan and phased roadmap for the Micronutrie
 - Unit and integration tests for image processing pipeline
 
 ### Phase 2: Nutrition Mapping & Data Model
-- UPC and fuzzy string matching to USDA FDC
-- LLM-based fallback for ambiguous items
-- Core data model implementation (User, Receipt, LineItem, NutrientLedger)
+- Implement LLM-based nutrient estimation pipeline
+  - Create test suite for nutrient estimation
+  - Implement nutrient value validation
+  - Add comprehensive error handling
+  - Implement retry logic for failed API calls
+- Design and implement nutrient caching system
+  - Implement in-memory cache (v1)
+  - Migrate to persistent database storage (v2)
+  - Add cache invalidation strategy
+  - Implement cache warming for common foods
+- Core data model implementation
+  - User, FoodImage, FoodItem models
+  - NutrientProfile model with caching
+  - NutrientLedger for aggregation
 - Secure storage and encryption
 - API endpoints for CRUD operations
 - Data validation and error handling
+- Unit conversion system (metric/imperial)
+- Performance optimization
+  - Implement batch processing for nutrient estimation
+  - Add parallel processing for multiple items
+  - Optimize LLM prompts for accuracy
+  - Add request queuing system
 
 ### Phase 3: Analytics, Radar Chart & Recommendations
 - Nutrient aggregation logic (rolling 7-day window)
@@ -42,7 +59,14 @@ This document outlines the technical plan and phased roadmap for the Micronutrie
 
 ### Phase 4: User Experience & Feedback Loop
 - Onboarding questionnaire & profile management
-- User correction loop (manual nutrient edits, feedback to matcher)
+- User correction loop
+  - Manual nutrient edits
+  - Feedback to matcher
+  - Confidence score adjustments
+- Progress tracking and notifications
+  - Real-time processing status
+  - Error notifications
+  - Success confirmations
 - Accessibility (WCAG 2.2 AA compliance, alt-table views)
 - Internationalization (units, currency, date formats, RTL support)
 
@@ -73,8 +97,7 @@ This document outlines the technical plan and phased roadmap for the Micronutrie
 ---
 
 ## 4. Technical Dependencies
-- OpenAI/LLM provider (for food recognition)
-- USDA FoodData Central API
+- OpenAI/LLM provider (for food recognition and nutrient estimation)
 - Firebase Cloud Messaging (push)
 - SendGrid (email)
 - Cloud provider (for scaling, storage, backups)
@@ -84,12 +107,14 @@ This document outlines the technical plan and phased roadmap for the Micronutrie
 ## 5. Risk Management
 | Risk | Mitigation |
 |------|------------|
-| LLM accuracy on food recognition | Multi-tier confidence scoring, user review UI, model fine-tuning |
-| API rate limits (LLM, USDA) | Caching, batching, monitoring, fallback logic |
-| Data privacy & PII exposure | Client-side image processing by default, encryption |
-| Scaling bottlenecks | Auto-scaling, queue monitoring, load testing |
-| Accessibility gaps | Early audits, manual and automated testing |
-| Delayed external dependencies | Mocking, feature flags, parallel development |
+| LLM accuracy on food recognition and nutrient estimation | - Multi-tier confidence scoring<br>- User review UI<br>- Nutrient caching<br>- Model fine-tuning<br>- Regular validation against scientific sources |
+| API rate limits (LLM) | - Caching<br>- Batching<br>- Monitoring<br>- Fallback logic<br>- Request queuing |
+| Data privacy & PII exposure | - Client-side image processing by default<br>- Encryption<br>- Data retention policies |
+| Scaling bottlenecks | - Auto-scaling<br>- Queue monitoring<br>- Load testing<br>- Batch processing |
+| Accessibility gaps | - Early audits<br>- Manual and automated testing<br>- Progressive enhancement |
+| Delayed external dependencies | - Mocking<br>- Feature flags<br>- Parallel development<br>- Fallback strategies |
+| Nutrient estimation accuracy | - Regular validation against scientific sources<br>- User feedback loop<br>- Confidence scoring<br>- Expert review process |
+| Processing latency | - Progress indicators<br>- Background processing<br>- Incremental results display<br>- Caching strategy |
 
 ---
 

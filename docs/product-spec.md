@@ -63,11 +63,35 @@ Audience: Engineering, Design, Data, QA, DevOps
   - Track failure patterns by food type/image quality
 
 ### 4.3 Food → Nutrition Mapping
-- Attempt match in order:  
-  1. Exact food item match via LLM
-  2. String fuzzy match (≥ 0.8 similarity)  
-  3. Prompt LLM: *"Return best match USDA FoodData Central item id for: '[FOOD ITEM]'."*  
+- Process each recognized food item through LLM pipeline:
+  1. Extract food items and weights from image via LLM Vision
+  2. For each food item, query LLM for nutrient content per unit weight
+  3. Calculate total nutrients based on detected quantities
+  4. Cache nutrient profiles to minimize API calls
 - Output: nutrient vector covering at least these 10 micros: Iron, Potassium, Magnesium, Calcium, Vitamin D, Vitamin B-12, Folate, Zinc, Selenium, Fiber.
+- Confidence handling:
+  - High (≥ 80%): Auto-process
+  - Medium (60-79%): "Yellow" review flag; user can adjust quantities
+  - Low (< 60%): "Red" review flag; requires user input
+- User correction:
+  - Allow quantity adjustments via slider/dropdown
+  - Store correction history for model improvement
+  - Track confidence scores and user corrections
+- Processing workflow:
+  1. Image upload → show upload progress
+  2. Food recognition → show "Analyzing image..."
+  3. Nutrient estimation → show "Calculating nutrients..."
+  4. Results display → show incremental results as they become available
+- Error handling:
+  - Retry failed nutrient estimations (max 3 attempts)
+  - Show clear error messages for failed items
+  - Allow manual override for failed items
+  - Log all errors for analysis
+- Performance optimization:
+  - Batch process multiple food items
+  - Cache common food nutrient profiles
+  - Implement request queuing for high load
+  - Show estimated completion time
 
 ### 4.4 Aggregation & Radar Chart
 - Aggregate nutrients over a **rolling 7-day window**.  
@@ -97,20 +121,19 @@ Audience: Engineering, Design, Data, QA, DevOps
 ## 5 · Non-Functional Requirements
 | Category | Requirement |
 |----------|-------------|
-| **Performance** | - Receipt parse turnaround ≤ 5 s (P95) on Wi-Fi, ≤ 12 s on 4G<br>- API response time < 200ms (P95)<br>- Page load time < 2s (P95) |
-| **Privacy** | - All OCR runs client-side **by default**; cloud OCR only with opt-in toggle<br>- Data retention: 2 years max<br>- Right to be forgotten: 30-day deletion window |
-| **Security** | - Data encrypted at rest (AES-256) & in transit (TLS 1.3)<br>- Key rotation: Every 90 days<br>- Rate limiting: 100 requests/minute per IP<br>- Session timeout: 24 hours<br>- MFA optional for all users |
-| **Scalability** | - Design for 50k weekly receipts in Year 1<br>- Components requiring 10× headroom:<br>  - OCR processing queue<br>  - USDA FDC API cache<br>  - Weekly summary generation<br>- Auto-scaling triggers:<br>  - CPU > 70% for 5 minutes<br>  - Memory > 80% for 5 minutes<br>  - Queue length > 1000 items |
-| **Accessibility** | - WCAG 2.2 AA compliance for colour contrast<br>- Radar has alt-table view<br>- Screen reader support for all features<br>- Keyboard navigation support |
-| **Internationalisation** | - Support metric & imperial units<br>- Currency symbol agnostic<br>- Date format based on user locale<br>- RTL language support |
+| **Performance** | - Receipt parse turnaround ≤ 5 s (P95) on Wi-Fi, ≤ 12 s on 4G<br>- API response time < 200ms (P95)<br>- Page load time < 2s (P95)<br>- Nutrient estimation < 2s per item (P95)<br>- Batch processing for multiple items |
+| **Privacy** | - All OCR runs client-side **by default**; cloud OCR only with opt-in toggle<br>- Data retention: 2 years max<br>- Right to be forgotten: 30-day deletion window<br>- Nutrient cache: 1 year max |
+| **Security** | - Data encrypted at rest (AES-256) & in transit (TLS 1.3)<br>- Key rotation: Every 90 days<br>- Rate limiting: 100 requests/minute per IP<br>- Session timeout: 24 hours<br>- MFA optional for all users<br>- API key rotation for LLM services |
+| **Scalability** | - Design for 50k weekly receipts in Year 1<br>- Components requiring 10× headroom:<br>  - OCR processing queue<br>  - Nutrient estimation queue<br>  - Weekly summary generation<br>- Auto-scaling triggers:<br>  - CPU > 70% for 5 minutes<br>  - Memory > 80% for 5 minutes<br>  - Queue length > 1000 items<br>- Batch processing for nutrient estimation |
+| **Accessibility** | - WCAG 2.2 AA compliance for colour contrast<br>- Radar has alt-table view<br>- Screen reader support for all features<br>- Keyboard navigation support<br>- Progress indicators for all async operations |
+| **Internationalisation** | - Support metric & imperial units<br>- Currency symbol agnostic<br>- Date format based on user locale<br>- RTL language support<br>- Localized nutrient units |
 
 ---
 
 ## 6 · External Interfaces & Dependencies
 | Service | Purpose | Contract Notes |
 |---------|---------|----------------|
-| **USDA FoodData Central API** | Nutrient vectors | Cache for 24 h; respect rate limits (3 K/day per key). |
-| **OpenAI / LLM provider** | Food recognition & mapping | Response time budget 1 s; must support function-call JSON mode. |
+| **OpenAI / LLM provider** | Food recognition & nutrient mapping | Response time budget 1 s; must support function-call JSON mode. |
 | **Push Gateway** | Notifications | Use Firebase Cloud Messaging unless alternative chosen. |
 | **E-mail** | Weekly summary | SendGrid free tier (100 emails/day) initial. |
 
@@ -144,12 +167,37 @@ FoodItem
   ├─ food_image_id (uuid, indexed)
   ├─ description (text)
   ├─ quantity (float)
-  ├─ fdc_id (nullable, indexed)
+  ├─ unit (text)  # e.g., "lb", "g", "piece"
   ├─ confidence (float)
   ├─ is_estimated (boolean)
   ├─ created_at (timestamp)
   ├─ updated_at (timestamp)
-  └─ indexes: [food_image_id, fdc_id]
+  └─ indexes: [food_image_id]
+
+NutrientProfile
+  ├─ food_name (text, indexed)
+  ├─ nutrients {iron_mg: float, potassium_mg: float, ...}
+  ├─ source {model_estimate|cache}
+  ├─ llm_prompt_version (text)
+  ├─ estimated_by (text)
+  ├─ confidence_score (float)
+  ├─ validation_count (int)
+  ├─ last_validated (timestamp)
+  ├─ created_at (timestamp)
+  ├─ updated_at (timestamp)
+  └─ indexes: [food_name]
+
+ProcessingQueue
+  ├─ id (uuid)
+  ├─ user_id (uuid, indexed)
+  ├─ food_image_id (uuid, indexed)
+  ├─ status {pending|processing|completed|failed}
+  ├─ priority (int)
+  ├─ retry_count (int)
+  ├─ error_message (text)
+  ├─ created_at (timestamp)
+  ├─ updated_at (timestamp)
+  └─ indexes: [user_id, status, priority]
 
 NutrientLedger (materialised weekly view)
   ├─ user_id (uuid, indexed)
