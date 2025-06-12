@@ -56,12 +56,9 @@ def test_estimate_nutrients_task_success(mock_openai_client, sample_food_items):
 
 def test_estimate_nutrients_task_error(sample_food_items):
     # Mock service to raise an exception
-    class MockService:
-        async def estimate_nutrients(self, food_items):
-            raise Exception("API Error")
-    mock_service = MockService()
-    with patch('app.services.nutrient_estimation.redis.Redis'):
-        result = estimate_nutrients_task(sample_food_items, openai_client=None, service=mock_service)
+    with patch('backend.app.services.nutrient_estimation.NutrientEstimationService.estimate_nutrients', new_callable=AsyncMock) as mock_estimate_nutrients:
+        mock_estimate_nutrients.side_effect = Exception("API Error")
+        result = estimate_nutrients_task(sample_food_items, openai_client=None)
     # Verify error handling
     assert result["status"] == "error"
     assert "error" in result

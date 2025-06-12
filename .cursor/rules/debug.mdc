@@ -1,10 +1,14 @@
 ---
 description: 
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
 # Debugging Best Practices
 
 - Always enable detailed error messages in FastAPI (set `debug=True`) during testing to quickly identify response structure issues and other errors.
 - Question initial assumptions and start with the basics before diving into complex mocking or configuration changes.
 - Iterate quickly through potential solutions, starting with the simplest and most direct ones to save time and avoid unnecessary complexity.
+
+# Always remember add PYTHONPATH when there is an app not found error
+
+# Notice the `micronutrient` conda env must be created before you run anything within terminal

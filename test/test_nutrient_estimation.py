@@ -19,7 +19,7 @@ async def test_estimate_nutrients_basic():
     mock_redis_client = MagicMock()
     mock_redis_client.get.return_value = None  # Simulate cache miss
 
-    service = NutrientEstimationService(mock_openai_client, redis_url="redis://localhost:6379/1")
+    service = NutrientEstimationService(mock_openai_client)
     service.redis_client = mock_redis_client
 
     food_item = FoodItem(

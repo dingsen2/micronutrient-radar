@@ -9,6 +9,10 @@ from app.db.base_class import Base
 
 class User(Base):
     __tablename__ = "users"
+    __table_args__ = (
+        Index("idx_users_email", "email"),
+        {'extend_existing': True}
+    )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     email = Column(String, unique=True, nullable=False)
@@ -24,12 +28,12 @@ class User(Base):
     food_images = relationship("FoodImage", back_populates="user")
     nutrient_ledgers = relationship("NutrientLedger", back_populates="user")
 
-    __table_args__ = (
-        Index("idx_users_email", "email"),
-    )
-
 class FoodImage(Base):
     __tablename__ = "food_images"
+    __table_args__ = (
+        Index("idx_food_images_user_captured_at", "user_id", "captured_at"),
+        {'extend_existing': True}
+    )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
@@ -44,12 +48,12 @@ class FoodImage(Base):
     user = relationship("User", back_populates="food_images")
     food_items = relationship("FoodItem", back_populates="food_image")
 
-    __table_args__ = (
-        Index("idx_food_images_user_captured_at", "user_id", "captured_at"),
-    )
-
 class FoodItem(Base):
     __tablename__ = "food_items"
+    __table_args__ = (
+        Index("idx_food_items_fdc_id", "fdc_id"),
+        {'extend_existing': True}
+    )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     food_image_id = Column(UUID(as_uuid=True), ForeignKey("food_images.id"), nullable=False)
@@ -64,12 +68,12 @@ class FoodItem(Base):
     # Relationships
     food_image = relationship("FoodImage", back_populates="food_items")
 
-    __table_args__ = (
-        Index("idx_food_items_fdc_id", "fdc_id"),
-    )
-
 class NutrientLedger(Base):
     __tablename__ = "nutrient_ledgers"
+    __table_args__ = (
+        Index("idx_nutrient_ledgers_user_week", "user_id", "week_start"),
+        {'extend_existing': True}
+    )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
@@ -80,8 +84,4 @@ class NutrientLedger(Base):
     data_source = Column(String, nullable=False)  # image, manual, estimated
 
     # Relationships
-    user = relationship("User", back_populates="nutrient_ledgers")
-
-    __table_args__ = (
-        Index("idx_nutrient_ledgers_user_week", "user_id", "week_start"),
-    ) 
+    user = relationship("User", back_populates="nutrient_ledgers") 

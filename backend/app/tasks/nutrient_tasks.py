@@ -1,7 +1,7 @@
-from backend.app.core.celery_app import celery_app
-from backend.app.services.nutrient_estimation import NutrientEstimationService, FoodItem, NutrientProfile
+from app.core.celery_app import celery_app
+from app.services.nutrient_estimation import NutrientEstimationService, FoodItem, NutrientProfile
 from openai import AsyncOpenAI
-from backend.app.core.config import settings
+from app.core.config import settings
 import logging
 import asyncio
 

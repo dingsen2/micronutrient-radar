@@ -19,20 +19,28 @@ This document outlines the technical plan and phased roadmap for the Micronutrie
 - Initial infrastructure (dev/staging/prod environments)
 - Team onboarding
 
-### Phase 1: Core Food Image Processing
+### Phase 1: Core Food Image Processing & Task Pipeline
 - Implement image upload and camera capture
+- Set up Celery task infrastructure
+  - Configure Redis broker and backend
+  - Set up task monitoring with Flower
+  - Implement task status tracking
+  - Add retry logic and error handling
 - Integrate LLM-based food recognition pipeline
+  - Create food recognition Celery task
+  - Implement task result caching
+  - Add task status polling
 - Implement confidence scoring & review UI
-- Unit and integration tests for image processing pipeline
+- Unit and integration tests for task pipeline
 
 ### Phase 2: Nutrition Mapping & Data Model
 - Implement LLM-based nutrient estimation pipeline
-  - Create test suite for nutrient estimation
-  - Implement nutrient value validation
+  - Create nutrient estimation Celery task
+  - Implement task orchestration between recognition and estimation
   - Add comprehensive error handling
   - Implement retry logic for failed API calls
 - Design and implement nutrient caching system
-  - Implement in-memory cache (v1)
+  - Implement Redis-based cache (v1)
   - Migrate to persistent database storage (v2)
   - Add cache invalidation strategy
   - Implement cache warming for common foods
@@ -40,6 +48,7 @@ This document outlines the technical plan and phased roadmap for the Micronutrie
   - User, FoodImage, FoodItem models
   - NutrientProfile model with caching
   - NutrientLedger for aggregation
+  - TaskResult model for Celery task tracking
 - Secure storage and encryption
 - API endpoints for CRUD operations
 - Data validation and error handling
@@ -48,13 +57,15 @@ This document outlines the technical plan and phased roadmap for the Micronutrie
   - Implement batch processing for nutrient estimation
   - Add parallel processing for multiple items
   - Optimize LLM prompts for accuracy
-  - Add request queuing system
+  - Configure Celery worker concurrency
 
 ### Phase 3: Analytics, Radar Chart & Recommendations
 - Nutrient aggregation logic (rolling 7-day window)
 - Radar chart visualization (responsive, accessible)
 - Gap-filler recommendation engine
-- Weekly summary job (PNG generation, email/push delivery)
+- Weekly summary job (Celery periodic task)
+  - PNG generation
+  - Email/push delivery
 - Shareable radar export (server-side PNG)
 
 ### Phase 4: User Experience & Feedback Loop
@@ -64,17 +75,31 @@ This document outlines the technical plan and phased roadmap for the Micronutrie
   - Feedback to matcher
   - Confidence score adjustments
 - Progress tracking and notifications
-  - Real-time processing status
+  - Real-time task status updates
   - Error notifications
   - Success confirmations
 - Accessibility (WCAG 2.2 AA compliance, alt-table views)
 - Internationalization (units, currency, date formats, RTL support)
 
 ### Phase 5: Monitoring, Scaling & Security
-- Logging, metrics, and alerting (structured logs, error tracking)
+- Logging, metrics, and alerting
+  - Structured logs
+  - Celery task monitoring
+  - Error tracking
+  - Performance metrics
 - Performance and load testing
+  - Celery worker scaling
+  - Queue management
+  - Load distribution
 - Auto-scaling and queue management
-- Security hardening (encryption, key rotation, rate limiting, MFA)
+  - Celery worker auto-scaling
+  - Queue prioritization
+  - Task routing
+- Security hardening
+  - Encryption
+  - Key rotation
+  - Rate limiting
+  - MFA
 - GDPR/export/delete flows
 
 ### Phase 6: Beta & Launch
@@ -98,6 +123,7 @@ This document outlines the technical plan and phased roadmap for the Micronutrie
 
 ## 4. Technical Dependencies
 - OpenAI/LLM provider (for food recognition and nutrient estimation)
+- Redis (for Celery broker and result backend)
 - Firebase Cloud Messaging (push)
 - SendGrid (email)
 - Cloud provider (for scaling, storage, backups)
@@ -108,13 +134,14 @@ This document outlines the technical plan and phased roadmap for the Micronutrie
 | Risk | Mitigation |
 |------|------------|
 | LLM accuracy on food recognition and nutrient estimation | - Multi-tier confidence scoring<br>- User review UI<br>- Nutrient caching<br>- Model fine-tuning<br>- Regular validation against scientific sources |
-| API rate limits (LLM) | - Caching<br>- Batching<br>- Monitoring<br>- Fallback logic<br>- Request queuing |
+| API rate limits (LLM) | - Celery task queuing<br>- Task rate limiting<br>- Caching<br>- Batching<br>- Monitoring<br>- Fallback logic |
+| Task processing failures | - Automatic retries<br>- Error tracking<br>- Task monitoring<br>- Fallback strategies<br>- Queue management |
 | Data privacy & PII exposure | - Client-side image processing by default<br>- Encryption<br>- Data retention policies |
-| Scaling bottlenecks | - Auto-scaling<br>- Queue monitoring<br>- Load testing<br>- Batch processing |
+| Scaling bottlenecks | - Celery worker auto-scaling<br>- Queue monitoring<br>- Load testing<br>- Batch processing |
 | Accessibility gaps | - Early audits<br>- Manual and automated testing<br>- Progressive enhancement |
 | Delayed external dependencies | - Mocking<br>- Feature flags<br>- Parallel development<br>- Fallback strategies |
 | Nutrient estimation accuracy | - Regular validation against scientific sources<br>- User feedback loop<br>- Confidence scoring<br>- Expert review process |
-| Processing latency | - Progress indicators<br>- Background processing<br>- Incremental results display<br>- Caching strategy |
+| Processing latency | - Progress indicators<br>- Background task processing<br>- Incremental results display<br>- Caching strategy |
 
 ---
 
