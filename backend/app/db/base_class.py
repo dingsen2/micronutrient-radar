@@ -1,7 +1,6 @@
 from typing import Any
-from sqlalchemy.ext.declarative import as_declarative, declared_attr, declarative_base
+from sqlalchemy.ext.declarative import as_declarative, declared_attr
 
-# Ensure Base is created only once
 if 'Base' not in globals():
     @as_declarative()
     class Base:

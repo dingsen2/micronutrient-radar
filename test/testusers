@@ -19,3 +19,15 @@
   "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0QGV4YW1wbGUuY29tIiwiZXhwIjoxNzQ5MjM4ODEwfQ.iF2C02G3xXsJ0-P4AFDVhdPHRN91sI63ikSJbnI7FJA",
   "token_type": "bearer"
 }
+
+{
+  "food_items": [
+    {
+      "description": "Mixed salad with olive oil dressing",
+      "quantity": 2,
+      "unit": "cups",
+      "confidence": 0.85,
+      "is_estimated": true
+    }
+  ]
+}

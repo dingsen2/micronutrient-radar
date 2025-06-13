@@ -84,4 +84,4 @@ class NutrientLedger(Base):
     data_source = Column(String, nullable=False)  # image, manual, estimated
 
     # Relationships
-    user = relationship("User", back_populates="nutrient_ledgers") 
+    user = relationship("User", back_populates="nutrient_ledgers")

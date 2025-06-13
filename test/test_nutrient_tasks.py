@@ -55,9 +55,12 @@ def test_estimate_nutrients_task_success(mock_openai_client, sample_food_items):
     assert "fiber_g" in first_result["nutrient_profile"]["nutrients"]
 
 def test_estimate_nutrients_task_error(sample_food_items):
-    # Mock service to raise an exception
-    with patch('backend.app.services.nutrient_estimation.NutrientEstimationService.estimate_nutrients', new_callable=AsyncMock) as mock_estimate_nutrients:
-        mock_estimate_nutrients.side_effect = Exception("API Error")
+    # Patch the event loop to raise an exception when run_until_complete is called
+    from unittest.mock import patch, MagicMock
+    with patch('backend.app.tasks.nutrient_tasks.asyncio.get_event_loop') as mock_get_event_loop:
+        mock_loop = MagicMock()
+        mock_loop.run_until_complete.side_effect = Exception("API Error")
+        mock_get_event_loop.return_value = mock_loop
         result = estimate_nutrients_task(sample_food_items, openai_client=None)
     # Verify error handling
     assert result["status"] == "error"
