@@ -1,12 +1,10 @@
 from celery import Task
 from app.core.celery_app import celery_app
 from app.services.food_image_service import FoodImageService
-from app.services.nutrient_estimation import NutrientEstimationService
-from openai import AsyncOpenAI
-from app.core.config import settings
+from app.db.session import SessionLocal
 import logging
 import asyncio
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +21,7 @@ class FoodImageTask(Task):
 @celery_app.task(name="process_food_image", base=FoodImageTask, bind=True)
 def process_food_image_task(self, image_id: str) -> Dict[str, Any]:
     """
-    Process a food image through the recognition and nutrient estimation pipeline.
+    Process a food image through the recognition pipeline.
     
     Args:
         image_id: The ID of the uploaded food image
@@ -32,39 +30,24 @@ def process_food_image_task(self, image_id: str) -> Dict[str, Any]:
         Dictionary containing the processing results
     """
     try:
-        # Initialize services
-        openai_client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
-        food_image_service = FoodImageService(openai_client)
-        nutrient_service = NutrientEstimationService(openai_client)
-        
-        # Run the async functions in an event loop
-        loop = asyncio.get_event_loop()
-        
-        # Step 1: Get food recognition results
-        recognition_results = loop.run_until_complete(
-            food_image_service.process_image(image_id)
-        )
-        
-        if not recognition_results or not recognition_results.get("food_items"):
+        # Create a new database session
+        db = SessionLocal()
+        try:
+            # Initialize service
+            food_image_service = FoodImageService(db)
+            
+            # Create event loop and run the async function
+            loop = asyncio.get_event_loop()
+            loop.run_until_complete(food_image_service.process_food_image(image_id))
+            
             return {
-                "status": "error",
-                "error": "No food items recognized in the image"
+                "status": "success",
+                "image_id": image_id
             }
-        
-        # Step 2: Estimate nutrients for recognized foods
-        food_items = recognition_results["food_items"]
-        nutrient_results = loop.run_until_complete(
-            nutrient_service.estimate_nutrients(food_items)
-        )
-        
-        # Step 3: Combine and return results
-        return {
-            "status": "success",
-            "image_id": image_id,
-            "recognition_results": recognition_results,
-            "nutrient_results": nutrient_results
-        }
-        
+            
+        finally:
+            db.close()
+            
     except Exception as e:
         logger.error(f"Error processing food image {image_id}: {str(e)}")
         # Retry the task

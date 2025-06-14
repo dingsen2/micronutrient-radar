@@ -8,6 +8,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError
 from app.db.session import get_db
+import os
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -56,6 +57,16 @@ def authenticate_user(db: Session, email: str, password: str):
     return user
 
 def get_current_user(db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
+    # Debug print statement for SKIP_AUTH value
+    print(f"[user_service] SKIP_AUTH: {os.getenv('SKIP_AUTH')}")
+
+    if os.getenv("SKIP_AUTH") == "1":
+        print("[user_service] Bypassing auth!")
+        user = db.query(User).first()
+        if not user:
+            raise HTTPException(status_code=401, detail="No users in database for SKIP_AUTH bypass. Please create a user first.")
+        return user
+
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",

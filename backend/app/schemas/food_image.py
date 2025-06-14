@@ -23,7 +23,10 @@ class FoodItem(FoodItemBase):
         from_attributes = True
 
 class FoodImageBase(BaseModel):
-    pass
+    captured_at: datetime
+    image_url: str
+    status: str
+    recognition_confidence: float
 
 class FoodImageCreate(FoodImageBase):
     pass
@@ -31,12 +34,7 @@ class FoodImageCreate(FoodImageBase):
 class FoodImageResponse(FoodImageBase):
     id: UUID
     user_id: UUID
-    captured_at: datetime
-    image_url: str
-    status: str
-    recognition_confidence: float
-    created_at: datetime
-    updated_at: datetime
+    task_id: Optional[str] = None
     food_items: List[FoodItem] = []
 
     class Config:

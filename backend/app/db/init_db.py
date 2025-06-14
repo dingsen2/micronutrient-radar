@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 from app.db.session import engine
 from app.models.base import Base
 from app.models.user import User
-from app.models.receipt import Receipt, LineItem
+from app.models.models import FoodImage, FoodItem
 from app.models.nutrient_ledger import NutrientLedger
 
 def init_db() -> None:

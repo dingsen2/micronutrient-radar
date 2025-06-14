@@ -152,7 +152,7 @@ class FoodImageService:
             )
 
     async def create_food_image(self, user_id: str, file: UploadFile) -> FoodImageResponse:
-        """Create a new food image record and process it."""
+        """Create a new food image record and return task ID for processing."""
         # Validate image
         is_valid, error_msg = await self.validate_image(file)
         if not is_valid:
@@ -166,31 +166,54 @@ class FoodImageService:
             user_id=user_id,
             captured_at=datetime.utcnow(),
             image_url=image_path,
-            status="processed",
-            recognition_confidence=0.0  # Will be updated after processing
+            status="pending",  # Changed from "processed" to "pending"
+            recognition_confidence=0.0
         )
         self.db.add(db_food_image)
         self.db.commit()
         self.db.refresh(db_food_image)
 
-        # Process image with LLM
-        food_items = await self.process_image_with_llm(image_path)
-
-        # Create food item records
-        for item in food_items:
-            db_food_item = FoodItem(
-                food_image_id=db_food_image.id,
-                description=item["description"],
-                quantity=item["quantity"],
-                confidence=item["confidence"],
-                is_estimated=True
-            )
-            self.db.add(db_food_item)
-
-        self.db.commit()
-        self.db.refresh(db_food_image)
-
+        # Return the response immediately
         return FoodImageResponse.from_orm(db_food_image)
+
+    async def process_food_image(self, image_id: str) -> None:
+        """Process a food image using LLM and update the database."""
+        # Get the food image record
+        db_food_image = self.db.query(FoodImage).filter(FoodImage.id == image_id).first()
+        if not db_food_image:
+            raise HTTPException(status_code=404, detail="Food image not found")
+
+        try:
+            # Process image with LLM
+            food_items = await self.process_image_with_llm(db_food_image.image_url)
+
+            # Create food item records
+            for item in food_items:
+                db_food_item = FoodItem(
+                    food_image_id=db_food_image.id,
+                    description=item["description"],
+                    quantity=item["quantity"],
+                    confidence=item["confidence"],
+                    is_estimated=True
+                )
+                self.db.add(db_food_item)
+
+            # Update food image status
+            db_food_image.status = "processed"
+            if food_items:
+                db_food_image.recognition_confidence = max(item["confidence"] for item in food_items)
+
+            self.db.commit()
+            self.db.refresh(db_food_image)
+
+        except Exception as e:
+            # Update status to failed if processing fails
+            db_food_image.status = "failed"
+            self.db.commit()
+            raise HTTPException(
+                status_code=500,
+                detail=f"Error processing image: {str(e)}"
+            )
 
     def get_user_food_images(self, user_id: str, skip: int = 0, limit: int = 100) -> List[FoodImageResponse]:
         """Get all food images for a user."""

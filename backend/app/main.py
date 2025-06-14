@@ -1,17 +1,25 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-from app.api.v1 import user, receipt, food_image
+from app.api.v1 import user, food_image
 from app.api.endpoints import nutrients
 from fastapi.openapi.utils import get_openapi
 from app.db.init_db import init_db
+import os
 
 app = FastAPI(
-    title="Micronutrient Radar API",
+    title=settings.PROJECT_NAME,
     description="Backend API for Micronutrient Radar - A smart nutrition tracking app",
     version="1.0.0",
     openapi_url=f"{settings.API_V1_STR}/openapi.json"
 )
+
+print(f"Settings DEBUG value: {settings.DEBUG}")
+
+# Set SKIP_AUTH if DEBUG is True
+if settings.DEBUG:
+    os.environ["SKIP_AUTH"] = "1"
+    print("DEBUG mode: Authentication bypass enabled (SKIP_AUTH=1)")
 
 # Configure CORS
 app.add_middleware(
@@ -23,7 +31,6 @@ app.add_middleware(
 )
 
 app.include_router(user.router, prefix=f"{settings.API_V1_STR}/users", tags=["users"])
-app.include_router(receipt.router, prefix=f"{settings.API_V1_STR}/receipts", tags=["receipts"])
 app.include_router(food_image.router, prefix=f"{settings.API_V1_STR}/food-images", tags=["food-images"])
 app.include_router(nutrients.router, prefix=f"{settings.API_V1_STR}/nutrients", tags=["nutrients"])
 
@@ -39,6 +46,8 @@ async def root():
 @app.on_event("startup")
 async def startup_event():
     init_db()
+    # Create upload directory if it doesn't exist
+    os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
 
 def custom_openapi():
     if app.openapi_schema:

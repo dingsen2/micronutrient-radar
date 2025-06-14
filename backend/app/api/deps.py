@@ -4,6 +4,7 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
 from sqlalchemy.orm import Session
 from datetime import datetime
+import os
 
 from app.core.config import settings
 from app.db.session import SessionLocal
@@ -23,7 +24,15 @@ async def get_current_user(
     db: Session = Depends(get_db),
     token: str = Depends(oauth2_scheme)
 ) -> User:
-    """Get current user from JWT token."""
+    """Get current user from JWT token, or bypass if SKIP_AUTH=1."""
+    print(f"SKIP_AUTH: {os.getenv('SKIP_AUTH')}")
+    if os.getenv("SKIP_AUTH") == "1":
+        print("Bypassing auth!")
+        user = db.query(User).first()
+        if not user:
+            raise HTTPException(status_code=401, detail="No users in database for SKIP_AUTH bypass. Please create a user first.")
+        return user
+    
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",

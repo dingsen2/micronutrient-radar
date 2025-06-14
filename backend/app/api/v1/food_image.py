@@ -6,6 +6,7 @@ from app.api.deps import get_current_user, get_db
 from app.models.models import User
 from app.schemas.food_image import FoodImageResponse
 from app.services.food_image_service import FoodImageService
+from app.tasks.food_image_tasks import process_food_image_task, get_task_status
 
 router = APIRouter()
 
@@ -16,10 +17,26 @@ async def create_food_image(
     db: Session = Depends(get_db)
 ):
     """
-    Upload and process a food image.
+    Upload a food image and start processing it in the background.
+    Returns immediately with the image ID and a task ID for tracking processing status.
     """
     food_image_service = FoodImageService(db)
-    return await food_image_service.create_food_image(current_user.id, file)
+    food_image = await food_image_service.create_food_image(current_user.id, file)
+    
+    # Start Celery task for processing
+    task = process_food_image_task.delay(str(food_image.id))
+    
+    # Add task ID to response
+    response = FoodImageResponse.from_orm(food_image)
+    response.task_id = task.id
+    return response
+
+@router.get("/task/{task_id}")
+async def get_task_status_endpoint(task_id: str):
+    """
+    Get the status of a food image processing task.
+    """
+    return get_task_status(task_id)
 
 @router.get("/", response_model=List[FoodImageResponse])
 async def list_food_images(

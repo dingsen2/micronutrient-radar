@@ -11,6 +11,9 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     PROJECT_NAME: str = "Micronutrient Radar"
     
+    # Debugging
+    DEBUG: bool = os.getenv("DEBUG", "False").lower() == "true"
+
     # CORS Configuration
     BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = []
 
@@ -24,6 +27,10 @@ class Settings(BaseSettings):
 
     # Database Configuration
     DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/micronutrient_radar")
+
+    @property
+    def SQLALCHEMY_DATABASE_URI(self) -> str:
+        return self.DATABASE_URL
 
     # Celery Configuration
     CELERY_BROKER_URL: str = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
