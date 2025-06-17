@@ -25,7 +25,7 @@ def upgrade() -> None:
     op.drop_constraint('nutrientledger_user_id_fkey', 'nutrientledger', type_='foreignkey')
     
     # Rename the user table to users
-    op.rename_table('user', 'users')
+    # op.rename_table('user', 'users')
     
     # Recreate foreign key constraints with the new table name
     op.create_foreign_key(
@@ -47,7 +47,7 @@ def downgrade() -> None:
     op.drop_constraint('nutrientledger_user_id_fkey', 'nutrientledger', type_='foreignkey')
     
     # Rename the users table back to user
-    op.rename_table('users', 'user')
+    # op.rename_table('users', 'user')
     
     # Recreate foreign key constraints with the original table name
     op.create_foreign_key(

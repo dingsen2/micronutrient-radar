@@ -1,6 +1,7 @@
 from celery import Task
 from app.core.celery_app import celery_app
 from app.services.food_image_service import FoodImageService
+from app.services.nutrient_estimation import NutrientEstimationService
 from app.db.session import SessionLocal
 import logging
 import asyncio
@@ -38,11 +39,21 @@ def process_food_image_task(self, image_id: str) -> Dict[str, Any]:
             
             # Create event loop and run the async function
             loop = asyncio.get_event_loop()
-            loop.run_until_complete(food_image_service.process_food_image(image_id))
+            result = loop.run_until_complete(food_image_service.process_food_image(image_id))
+            
+            # Check if any food items were recognized
+            if not result or not result.get("food_items"):
+                return {
+                    "status": "success",
+                    "message": "No food items recognized",
+                    "image_id": image_id,
+                    "recognition_results": result
+                }
             
             return {
                 "status": "success",
-                "image_id": image_id
+                "image_id": image_id,
+                "recognition_results": result
             }
             
         finally:

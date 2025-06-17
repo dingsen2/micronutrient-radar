@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from backend.app.tasks.nutrient_tasks import estimate_nutrients_task
-from backend.app.services.nutrient_estimation import FoodItem, NutrientProfile
+from app.tasks.nutrient_tasks import estimate_nutrients_task
+from app.services.nutrient_estimation import FoodItem, NutrientProfile
 from datetime import datetime
 
 @pytest.fixture
@@ -57,7 +57,7 @@ def test_estimate_nutrients_task_success(mock_openai_client, sample_food_items):
 def test_estimate_nutrients_task_error(sample_food_items):
     # Patch the event loop to raise an exception when run_until_complete is called
     from unittest.mock import patch, MagicMock
-    with patch('backend.app.tasks.nutrient_tasks.asyncio.get_event_loop') as mock_get_event_loop:
+    with patch('app.tasks.nutrient_tasks.asyncio.get_event_loop') as mock_get_event_loop:
         mock_loop = MagicMock()
         mock_loop.run_until_complete.side_effect = Exception("API Error")
         mock_get_event_loop.return_value = mock_loop

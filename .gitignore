@@ -50,3 +50,9 @@ ENV/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Python virtual environment
+backend/venv/
+
+# Miniconda installer
+miniconda.sh

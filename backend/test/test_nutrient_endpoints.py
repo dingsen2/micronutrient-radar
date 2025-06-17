@@ -3,7 +3,7 @@ import pytest
 from fastapi.testclient import TestClient
 from backend.app.main import app
 from backend.app.api.endpoints import nutrients
-from backend.app.models.models import User
+from app.models.models import User
 from datetime import datetime
 from backend.app.core.celery_app import celery_app # Import the actual celery_app
 

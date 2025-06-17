@@ -59,6 +59,34 @@ This document outlines the technical plan and phased roadmap for the Micronutrie
   - Optimize LLM prompts for accuracy
   - Configure Celery worker concurrency
 
+### Phase 2.1: Enhanced Data Model & Caching (Current Focus)
+1. User Food History Database
+   - Track when users eat meals (timestamp-based meal tracking)
+   - Store what they ate (via food images)
+   - Keep track of nutrients (per-meal nutrient totals)
+   - Support basic meal type categorization (breakfast, lunch, dinner, snack)
+   - Add API endpoints for history retrieval and analysis
+
+2. Two-Tier Cache System
+   - Implement global food cache for common items
+   - Add user-specific cache based on history
+   - Create cache lookup service
+   - Implement cache warming strategy
+   - Add cache invalidation and update mechanisms
+
+3. Smart Task Pipeline Integration
+   - Modify food image processing flow:
+     1. Check user's personal cache
+     2. Check global cache
+     3. Fall back to OpenAI if needed
+     4. Update both caches with new results
+     5. Add to user's food history
+   - Implement background tasks:
+     - Daily nutrient aggregation
+     - Cache warming based on user patterns
+     - User preference updates
+   - Add monitoring and analytics for cache hit rates
+
 ### Phase 3: Analytics, Radar Chart & Recommendations
 - Nutrient aggregation logic (rolling 7-day window)
 - Radar chart visualization (responsive, accessible)

@@ -2,7 +2,7 @@ import os
 import uuid
 import base64
 from datetime import datetime
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Dict, Any
 from fastapi import UploadFile, HTTPException
 from PIL import Image
 import magic
@@ -176,7 +176,7 @@ class FoodImageService:
         # Return the response immediately
         return FoodImageResponse.from_orm(db_food_image)
 
-    async def process_food_image(self, image_id: str) -> None:
+    async def process_food_image(self, image_id: str) -> Dict[str, Any]:
         """Process a food image using LLM and update the database."""
         # Get the food image record
         db_food_image = self.db.query(FoodImage).filter(FoodImage.id == image_id).first()
@@ -205,6 +205,13 @@ class FoodImageService:
 
             self.db.commit()
             self.db.refresh(db_food_image)
+
+            # Return the processed results
+            return {
+                "food_items": food_items,
+                "status": "processed",
+                "recognition_confidence": db_food_image.recognition_confidence
+            }
 
         except Exception as e:
             # Update status to failed if processing fails

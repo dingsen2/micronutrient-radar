@@ -1,7 +1,7 @@
 import pytest
 import asyncio
 from unittest.mock import AsyncMock, MagicMock
-from backend.app.services.nutrient_estimation import NutrientEstimationService, FoodItem, NutrientProfile
+from app.services.nutrient_estimation import NutrientEstimationService, FoodItem, NutrientProfile
 
 # Example test for the nutrient estimation function
 

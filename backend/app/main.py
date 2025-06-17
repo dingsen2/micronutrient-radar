@@ -2,9 +2,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.api.v1 import user, food_image
-from app.api.endpoints import nutrients
+from app.api.endpoints import nutrients, user_food_history
 from fastapi.openapi.utils import get_openapi
 from app.db.init_db import init_db
+from app.models import User, UserFoodHistory, FoodImage  # Import models to ensure registration
 import os
 
 app = FastAPI(
@@ -33,6 +34,7 @@ app.add_middleware(
 app.include_router(user.router, prefix=f"{settings.API_V1_STR}/users", tags=["users"])
 app.include_router(food_image.router, prefix=f"{settings.API_V1_STR}/food-images", tags=["food-images"])
 app.include_router(nutrients.router, prefix=f"{settings.API_V1_STR}/nutrients", tags=["nutrients"])
+app.include_router(user_food_history.router, prefix=f"{settings.API_V1_STR}/food-history", tags=["food-history"])
 
 @app.get("/")
 async def root():

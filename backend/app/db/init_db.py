@@ -1,9 +1,9 @@
 from sqlalchemy.orm import Session
 from app.db.session import engine
-from app.models.base import Base
-from app.models.user import User
+from app.db.base_class import Base
+from app.models.models import User
 from app.models.models import FoodImage, FoodItem
-from app.models.nutrient_ledger import NutrientLedger
+from app.models.models import NutrientLedger
 
 def init_db() -> None:
     # Create all tables

@@ -12,3 +12,27 @@ alwaysApply: true
 # Always remember add PYTHONPATH when there is an app not found error
 
 # Notice the `micronutrient` conda env must be created before you run anything within terminal
+
+# Troubleshooting Database Session Mismatches in FastAPI Tests
+
+When encountering `ForeignKeyViolation` or data invisibility in FastAPI tests using `pytest` and `TestClient`, the root cause is often a mismatch between the database session used by test fixtures and the session used by the FastAPI application during API calls.
+
+**Symptoms:**
+- `sqlalchemy.exc.IntegrityError: (psycopg2.errors.ForeignKeyViolation)` even when related data is supposedly created.
+- Data created by fixtures (e.g., a `User` or `FoodImage`) is not found or visible when the `TestClient` makes an API request to retrieve or link to it.
+- Debugging print statements show different `db_session` IDs between your `pytest` fixtures and your FastAPI endpoint functions (e.g., `id(db_session)` reveals different memory addresses).
+
+**Solution (Systematic Approach):**
+1.  **Isolate the Problem:** Start by confirming that basic data creation and retrieval works in isolation (e.g., a simple test for `User` creation).
+2.  **Diagnose Session Mismatch:** Use print statements to log the `id()` of the `db_session` in both your `pytest` fixtures (where data is set up) and the FastAPI endpoint functions (where data is consumed/modified). If these IDs differ, you've found the core problem.
+3.  **Ensure Explicit Persistence in Fixtures:**
+    *   Change `db_session.flush()` to `db_session.commit()` followed by `db_session.refresh(obj)` in fixtures that create critical data (e.g., `test_user`, `test_food_image`). This ensures the data is truly persisted and visible within that session's transaction.
+4.  **Force Consistent Session for `TestClient` via `app.dependency_overrides`:**
+    *   This is the crucial step. In your test functions, explicitly override the `get_db` dependency for the `TestClient` to use the *same `db_session` instance* provided by your fixture.
+    *   Example: `app.dependency_overrides[deps.get_db] = lambda: db_session`
+    *   Remember to clear these overrides using `app.dependency_overrides.pop()` in a `finally` block or at the end of the test to ensure test isolation.
+    *   This guarantees that the FastAPI application, when processing test requests, operates on the exact database state prepared by your fixtures.
+
+**General Debugging Principle:**
+- Instead of "trying things aimlessly," focus on concrete **symptoms** (error messages, unexpected outputs), formulate **hypotheses** based on these symptoms, and use targeted **diagnostics** (like logging specific IDs or values) to validate your hypotheses.
+- Leverage the **intended testing mechanisms** of your framework (e.g., `app.dependency_overrides` in FastAPI) to create controlled, isolated environments for testing. This helps pinpoint issues without modifying production code.

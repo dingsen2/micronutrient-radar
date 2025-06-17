@@ -1,41 +1,55 @@
 from datetime import datetime
-from typing import List, Optional
-from pydantic import BaseModel, Field
-from uuid import UUID
+from typing import List, Optional, Dict
+from pydantic import BaseModel, Field, UUID4
 
 class FoodItemBase(BaseModel):
     description: str
     quantity: float
-    confidence: float = Field(ge=0.0, le=1.0)
-    is_estimated: bool = True
+    fdc_id: Optional[str] = None
+    confidence: Optional[float] = Field(None, ge=0.0, le=1.0)
+    is_estimated: bool = False
 
 class FoodItemCreate(FoodItemBase):
     pass
 
-class FoodItem(FoodItemBase):
-    id: UUID
-    food_image_id: UUID
+class FoodItemUpdate(FoodItemBase):
+    pass
+
+class FoodItemInDBBase(FoodItemBase):
+    id: UUID4
+    food_image_id: UUID4
     created_at: datetime
     updated_at: datetime
-    
 
     class Config:
         from_attributes = True
+
+class FoodItem(FoodItemInDBBase):
+    pass
 
 class FoodImageBase(BaseModel):
     captured_at: datetime
     image_url: str
     status: str
-    recognition_confidence: float
+    recognition_confidence: Optional[float] = Field(None, ge=0.0, le=1.0)
 
 class FoodImageCreate(FoodImageBase):
-    pass
+    food_items: List[FoodItemCreate]
 
-class FoodImageResponse(FoodImageBase):
-    id: UUID
-    user_id: UUID
-    task_id: Optional[str] = None
-    food_items: List[FoodItem] = []
+class FoodImageUpdate(FoodImageBase):
+    food_items: Optional[List[FoodItemUpdate]] = None
+
+class FoodImageInDBBase(FoodImageBase):
+    id: UUID4
+    user_id: UUID4
+    created_at: datetime
+    updated_at: datetime
 
     class Config:
-        from_attributes = True 
+        from_attributes = True
+
+class FoodImageSchema(FoodImageInDBBase):
+    food_items: List[FoodItem]
+
+class FoodImageResponse(FoodImageSchema):
+    task_id: Optional[str] = None 
